@@ -10,18 +10,19 @@
 
     - name: Upgrade all packages
       apt:
-        upgrade: dist  # or "yes"
+        upgrade: yes
 
     - name: Install dependencies
       apt:
-        name:
+        pkg:
           - pps-tools
           - gpsd
           - gpsd-clients
           - python3-gps
           - chrony
           - ufw
-        state: present
+        state: latest
+        update_cache: true
 
 
     - name: Enable UFW
@@ -101,7 +102,7 @@
         name: chrony
         state: restarted
 
-    #- name: Reboot the system
-     # reboot:
+    - name: Reboot the system
+      reboot:
 
 
