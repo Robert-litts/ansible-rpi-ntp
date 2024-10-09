@@ -1,19 +1,16 @@
 ---
 - name: Setup Raspberry Pi NTP Server
   hosts: raspberrypi
-  become: yes
+  become: true
+
   tasks:
-
     - name: Update apt package index
-      apt:
-        update_cache: yes
-
-    - name: Upgrade all packages
-      apt:
-        upgrade: yes
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: true
 
     - name: Install dependencies
-      apt:
+      ansible.builtin.apt:
         pkg:
           - pps-tools
           - gpsd
@@ -22,33 +19,26 @@
           - chrony
           - ufw
         state: latest
-        update_cache: true
-
 
     - name: Enable UFW
-      ufw:
+      community.general.ufw:
         state: enabled
 
     - name: Allow SSH through UFW
-      ufw:
+      community.general.ufw:
         rule: limit
         port: ssh
         proto: tcp
 
-    - name: Allow NTP through UFW
-      ufw:
-        rule: allow
-        port: ntp 
-
     - name: Enable UFW to allow NTP from anywhere
-      ufw:
+      community.general.ufw:
         rule: allow
         port: ntp
 
     - name: Configure GPIO and module info for PPS
       block:
         - name: Add PPS GPIO overlay to /boot/firmware/config.txt
-          lineinfile:
+          ansible.builtin.lineinfile:
             path: /boot/firmware/config.txt
             line: "{{ item }}"
             state: present
@@ -59,29 +49,29 @@
             - "init_uart_baud=9600"
 
     - name: Add pps-gpio module to /etc/modules
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/modules
         line: "pps-gpio"
         state: present
 
     - name: Update /etc/default/gpsd configuration
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/default/gpsd
         regexp: '^DEVICES='
         line: 'DEVICES="/dev/ttyS0 /dev/pps0"'
       with_items:
-          - 'GPSD_OPTIONS="-n"'
-          - 'USBAUTO="true"'
-          - 'START_DAEMON="true"'
+        - 'GPSD_OPTIONS="-n"'
+        - 'USBAUTO="true"'
+        - 'START_DAEMON="true"'
 
     - name: Comment out chrony 'pool' config
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/chrony/chrony.conf
         regexp: '^pool'
         line: '# &'
 
     - name: Update chrony configuration
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: /etc/chrony/chrony.conf
         line: "{{ item }}"
         state: present
@@ -93,16 +83,14 @@
         - 'server time.nist.gov'
         - 'server time.cloudflare.com iburst'
         - 'server time.apple.com iburst'
-        - 'server tick.usno.navy.mil'  
+        - 'server tick.usno.navy.mil'
         - 'server tock.usno.navy.mil'
 
 
     - name: Restart chrony service
-      service:
+      ansible.builtin.service:
         name: chrony
         state: restarted
 
     - name: Reboot the system
-      reboot:
-
-
+      ansible.builtin.reboot:
